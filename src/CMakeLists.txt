@@ -16,9 +16,12 @@ include_directories("${PROJECT_SOURCE_DIR}/src/include")
 include_directories("${PROJECT_SOURCE_DIR}/frameworks/EasyBMP/include")
 include_directories("${PROJECT_SOURCE_DIR}/frameworks/liblinear-1.94")
 include_directories("${PROJECT_SOURCE_DIR}/frameworks/tinyxml")
+include_directories("${PROJECT_SOURCE_DIR}/frameworks/glfw")
+include_directories("${PROJECT_SOURCE_DIR}/frameworks/glm")
 
 list(APPEND CURRENT_TARGET_SOURCES
     proj.cpp
+    multik.cpp
     )
 
 list(APPEND CURRENT_TARGET_HEADERS
@@ -26,6 +29,8 @@ list(APPEND CURRENT_TARGET_HEADERS
     new_step.h
     instruction.h
     parser.h
+    multik.h
+    menu.h
     )
 
 if (TARGET easybmp)
@@ -65,7 +70,9 @@ elseif(UNIX AND NOT APPLE)
 endif()
 
 set_target_properties(${CURRENT_TARGET} PROPERTIES COMPILE_FLAGS "-O2 -g -std=gnu++11")
-
 target_link_libraries(${CURRENT_TARGET}
     ${CURRENT_TARGET_PLATFORM_LIBRARIES}
+    GLU
+    glut
+    GL
     )

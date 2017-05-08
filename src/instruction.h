@@ -13,8 +13,7 @@ using namespace std;
 struct now_relation
 {
     std::string reagent;
-//    std::string new_live_in;
-//    std::string verteilung;
+    std::string destroy;
     std::string used;
     std::string formuls;
     now_relation *next;
@@ -33,7 +32,7 @@ struct now_all_relation
     now_name_of_relation *name_of_relation;
     now_all_relation *next;
 };
-
+//запись правил из XML Документа
 class all_instruction
 {
     private:
@@ -79,11 +78,9 @@ class all_instruction
                 while(xml_reagent!=NULL)
                 {
                     now_relat->reagent= xml_reagent->Attribute("name");
-//                    now_relat->new_live_in = xml_reagent->Attribute("new_live_in");  
                     now_relat->used = xml_reagent->Attribute("used");  
-//                    now_relat->verteilung = xml_reagent->Attribute("new");  
                     now_relat->formuls = xml_reagent->Attribute("new");  
-
+                    now_relat->destroy = xml_reagent->Attribute("destroy");
                     if((xml_reagent=xml_reagent->NextSiblingElement("reagent"))!=NULL)
                         {
                             now_relat->next= new now_relation();
@@ -107,6 +104,7 @@ class all_instruction
         delete instruction_file;
         return 1;
     }
+    //вывод инструкций
     void print_instraction()
     {
         now_all_relation *all_now=all_relation;
@@ -130,6 +128,7 @@ class all_instruction
             all_now=all_now->next;
         }
     }
+    //удаление правил
     void all_free()
     {
         now_all_relation *all_now=all_relation;
@@ -154,9 +153,91 @@ class all_instruction
             delete delete_all_now;
         }
     }
-//лучше юзать алгоритм евклида и во входных данных иеть вид 
-// <reagent name="volk" used="20%" new="volk+ovc/volk*ox" new_live_in="ovc" raspred="max"/> 
-//
+    //начало работы с рассматриваемой точкой пространства, на основе полученных
+    //правил
+    int work_with_data (int*new_cube,int*cube,int start_x,int start_y,int start_z,int razm,int bact,int substance,int radius,
+            now_relation *now,string name_of_function,string *all_bact_and_subst)
+    {
+        //std::cout<<"now we work with data"<<(now->formuls)<<std::endl;
+        while(now!=NULL)
+        {
+           int result = result_of_function(new_cube,cube,start_x,start_y,start_z,razm,bact,substance,radius,
+                   now->used,now->formuls,now->reagent,(now->destroy),(name_of_function+","),all_bact_and_subst);
+           if(result==-2)
+           {
+               //если правило не может быть выполнено-выход
+               cout<<"FATAL ERROR IN RULES.XML"<<endl;
+               return -2;
+           }//else if(result==-1)//не сработала инструкция для данного реагента, переходим к следующей
+           now=now->next;
+        }
+        return 1;
+    }
+    //проверка, все ли реагенты есть в рассматриваемой инструкции
+    int this_reagent(std::string name,std::string have_reagents)
+    {
+        int found=0;
+        int pos=0;
+        //std::cout<<have_reagents<<endl;
+        //cout<<name<<endl;
+        found=name.find(",",pos);
+        while(found!=std::string::npos)
+        {
+            int found2=0;
+            int pos2=0;
+            found2=have_reagents.find(",",pos2);
+           
+            while(have_reagents.substr(pos2, found2-pos2)!=name.substr(pos, found-pos))
+            {
+                pos2=found2+1;
+                found2=have_reagents.find(",",pos2);
+                if(found2==std::string::npos)
+                    return -1;
+            }
+            pos=found+1;
+            found=name.find(",",pos);
+        }
+        int found2=0;
+        int pos2=0;
+        found2=have_reagents.find(",",pos2);
+        while(have_reagents.substr(pos2, found2-pos2)!=name.substr(pos, name.length()-pos+1))
+        {
+            pos2=found2+1;
+            found2=have_reagents.find(",",pos2);
+            if(found2==std::string::npos)
+               return -1;
+        }
+        return 1;
+    }
+    //проверка: соответсвуют ли выбранные в окресности реагенты какй либо
+    //интсрукции, если нет идём на радис выше, если да работаем с полученными
+    //данными
+    int this_maybe_line(int*new_cube,int*cube,int start_x,int start_y,int start_z,int razm,int bact,int substance,
+            int now_radius,std::string have_reagents,string *all_bact_and_subst)
+    {
+        struct now_all_relation *now;
+        now=all_relation;
+        while(now->radius!=now_radius)
+        {
+            if(now->next==NULL)
+                return -1;
+            now=now->next;
+        }
+        struct now_name_of_relation *now_name;
+        now_name=now->name_of_relation;
+
+        while(this_reagent(now_name->name,have_reagents)==-1)
+        {
+            if(now_name->next==NULL)
+                return -1;
+            now_name=now_name->next;
+        }
+        return work_with_data(new_cube,cube,start_x,start_y,start_z,razm,bact,substance,now_radius,
+                now_name->relation,now_name->name,all_bact_and_subst);//здесь закинуть функцию обработки в случае NULL
+    }
+};
+
+//нев вошедшее
 /*
     int min_used(std::vector<int>::iterator new_data,vector<float> kof, vector<int>::iterator data) 
     {
@@ -317,83 +398,4 @@ class all_instruction
             live_because,name_reagent,how_live,all_bact_and_subst,result,how_many_old_reagent);
     }
 */
-    int work_with_data (int*new_cube,int*cube,int start_x,int start_y,int start_z,int razm,int bact,int substance,int radius,
-            now_relation *now,string name_of_function,string *all_bact_and_subst)
-    {
-        std::cout<<"now we work with data"<<(now->formuls)<<std::endl;
-        while(now!=NULL)
-        {
-           int result = result_of_function(new_cube,cube,start_x,start_y,start_z,razm,bact,substance,radius,
-                   now->used,now->formuls,now->reagent,(name_of_function+","),all_bact_and_subst);
-           if(result==-2)
-           {
-               std::cout<<"WTF???"<<std::endl;
-               return -2;
-           }//else if(result==-1)//ЧТО ДЕЛАТЬ ТОГДА???
-           now=now->next;
-        }
-        return 1;
-    }
-
-    int this_reagent(std::string name,std::string have_reagents)
-    {
-        int found=0;
-        int pos=0;
-        //std::cout<<have_reagents<<endl;
-        //cout<<name<<endl;
-        found=name.find(",",pos);
-        while(found!=std::string::npos)
-        {
-            int found2=0;
-            int pos2=0;
-            found2=have_reagents.find(",",pos2);
-           
-            while(have_reagents.substr(pos2, found2-pos2)!=name.substr(pos, found-pos))
-            {
-                pos2=found2+1;
-                found2=have_reagents.find(",",pos2);
-                if(found2==std::string::npos)
-                    return -1;
-            }
-            pos=found+1;
-            found=name.find(",",pos);
-        }
-        int found2=0;
-        int pos2=0;
-        found2=have_reagents.find(",",pos2);
-        while(have_reagents.substr(pos2, found2-pos2)!=name.substr(pos, name.length()-pos+1))
-        {
-            pos2=found2+1;
-            found2=have_reagents.find(",",pos2);
-            if(found2==std::string::npos)
-               return -1;
-        }
-        //cout<<"good"<<endl;
-        return 1;
-    }
-
-    int this_maybe_line(int*new_cube,int*cube,int start_x,int start_y,int start_z,int razm,int bact,int substance,
-            int now_radius,std::string have_reagents,string *all_bact_and_subst)
-    {
-        struct now_all_relation *now;
-        now=all_relation;
-        while(now->radius!=now_radius)
-        {
-            if(now->next==NULL)
-                return -1;
-            now=now->next;
-        }
-        struct now_name_of_relation *now_name;
-        now_name=now->name_of_relation;
-
-        while(this_reagent(now_name->name,have_reagents)==-1)
-        {
-            if(now_name->next==NULL)
-                return -1;
-            now_name=now_name->next;
-        }
-        return work_with_data(new_cube,cube,start_x,start_y,start_z,razm,bact,substance,now_radius,
-                now_name->relation,now_name->name,all_bact_and_subst);//здесь закинуть функцию обработки в случае NULL
-    }
-};
-
+ 

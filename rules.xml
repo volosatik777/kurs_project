@@ -1,0 +1,15 @@
+<all_relation>
+    <distantion radius="1">
+        <relation name="volk,ovc,ox">
+            <reagent name="volk[0,-1,1]" new="volk[0,1,1]+ovc[1,1.1]/volk[0,0,0]*ox[0,1,-1]" used="1,2,2,3"/> 
+            <reagent name="ovc[1,0,0]"   new="ovc[0,1,1]/volk[-1,0,-1]/ox[1,0,-1]" used="1,1,1"/>
+            <reagent name="ox[1,1,1]"  new="ox[1,1,1]/2/volk[1,0,1]/ovc[1,1,-1]" used="1,1,2"/>
+        </relation>
+    </distantion>
+    <distantion radius="2">
+        <relation name="ovc,trav">                                       
+            <reagent name="ovc[1,1,1]" new="ovc[1,0,1]+trav[1,0,0]*ovc[0,1,2]/100" used="1,2,1"/>            
+            <reagent name="ox[1,-2,0]" new="ovc[1,-1,1]*trav[2,-1,-2]" used="2,2"/>
+        </relation>   
+    </distantion>
+</all_relation>
